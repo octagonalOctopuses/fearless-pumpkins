@@ -14,6 +14,75 @@ db.once('open', function() {
   console.log('mongoose connected successfully');
 });
 
+var trainingSchema = new mongoose.Schema({
+  Category: String, // e.g. politics
+  Classification: Number, // 0 for democrat, 1 for republican
+  Text: String, // the tweet text, uncleaned
+  Handle: String // who wrote this tweet, in case useful later
+});
+
+var cacheSchema = new mongoose.Schema({
+	Handle: String,
+	Classification: Number,
+	Probability: Number,
+	Count: {type: Number, default: 0}
+});
+
+var Training = mongoose.model('training', trainingSchema);
+var Cache = mongoose.model('cache', cacheSchema);
+
+module.exports.addTweet = (Text, Category, Classification, Handle, callback) => {
+	Training.create({Text}, (err, tweet) => {
+		if (err) {
+			throw err;
+		} else {
+			tweet.Category = Category;
+			tweet.Classification = Classification;
+			tweet.Handle = Handle;
+			tweet.save((err, updatedTweet) => {
+        console.log('tweet saved');
+				callback();
+			});
+		}
+	})
+};
+
+module.exports.findHandle = (Handle, callback) => {
+	Cache.find({Handle}, (err, handle) => {
+		callback(err, handle);
+	});
+};
+
+module.exports.findAllHandles = (callback) => {
+  Cache.find({}, (err, results) => {
+    callback(null, results);
+  });
+};
+
+module.exports.addHandle = (Handle, Classification, callback) => {
+	Cache.create({Handle}, (err, handle) => {
+		if (err) {
+			throw err;
+		} else {
+			handle.Classification = Classification;
+			handle.Probability = Probability;
+			handle.save((err, updatedHandle) => {
+				callback(updatedHandle);
+			});
+		}
+	});
+};
+
+module.exports.increaseCount = (Handle, callback) => {
+	Cache.find({Handle}, (err, handle) => {
+		handle.count++;
+		handle.save((err, updatedHandle) => {
+			callback(updatedHandle);
+		});
+	});
+};
+
+
 // Schema of our dataset used to determine if a user is mostly democrat or replublican
 var partySchema = mongoose.Schema({
   commonFriends: Object,
@@ -44,7 +113,7 @@ var User = mongoose.model('users', twitterUserSchema);
 var Log = mongoose.model('logs', logSchema);
 
 
-const NBR_DAYS = 2 * 24 * 60 * 60 * 1000; //Change to 0 to use the engine oneach request 
+const NBR_DAYS = 2 * 24 * 60 * 60 * 1000; //Change to 0 to use the engine oneach request
 
 // compare the last row update to the current date
 var isYoungerThan = function(strDate) {
@@ -137,13 +206,13 @@ var writeTwitterUser = function(data, callback) {
         var count = 0;
 
         if (!row[0]) {
-          count = 1; 
+          count = 1;
         } else {
           if (!row[0].count) {
             // if should be remove when a count property will be present on each user
-            count = 2; 
+            count = 2;
           } else {
-            count = row[0].count + 1; 
+            count = row[0].count + 1;
           }
         }
 
@@ -152,8 +221,8 @@ var writeTwitterUser = function(data, callback) {
             reject(err);
           } else {
             data.count = count;
-            data.date = new Date();    
-            var Data = new User(data);  
+            data.date = new Date();
+            var Data = new User(data);
             Data.save(function (err, row) {
               if (err) {
                 reject(err);
@@ -165,7 +234,7 @@ var writeTwitterUser = function(data, callback) {
         });
       }
 
-    });      
+    });
 
   });
   return promisewriteTwitterUser;
@@ -183,18 +252,18 @@ var updateCount = function(screenName, callback) {
         var count = 0;
 
         if (!row[0]) {
-          count = 1; 
+          count = 1;
         } else {
           if (!row[0].count) {
             // if should be remove when a count property will be present on each user
-            count = 2; 
+            count = 2;
           } else {
-            count = row[0].count + 1; 
+            count = row[0].count + 1;
           }
         }
 
         row[0].count = count;
-        var Data = new User(row[0]);  
+        var Data = new User(row[0]);
         Data.save(function (err, row) {
           if (err) {
             reject(err);
@@ -205,7 +274,7 @@ var updateCount = function(screenName, callback) {
 
       }
 
-    });      
+    });
 
   });
   return promiseUpdateCount;
@@ -241,7 +310,7 @@ var isTwitterUserLastUpdateYoungerThan = (screenName, callback) => {
             result = false;
           } else {
             // in db and date defined
-            result = isYoungerThan(row[0].date); 
+            result = isYoungerThan(row[0].date);
           }
         }
         resolve(result);
@@ -254,8 +323,8 @@ var isTwitterUserLastUpdateYoungerThan = (screenName, callback) => {
 // return all users rows
 var fetchAllTwitterUsers = (callback) => {
   var promisefetchAllTwitterUsers = new Promise(function(resolve, reject) {
-    var usersList = {}; 
-    
+    var usersList = {};
+
     User.find({}, (err, rows) => {
       if (err) {
         reject(err);
@@ -265,13 +334,13 @@ var fetchAllTwitterUsers = (callback) => {
           user.screen_name;
           // if should be remove whwn a count property will be present on each user
           if (!user.count) {
-            user.count = 1;    
+            user.count = 1;
           }
           // if should be remove whwn a date property will be present on each user
           if (!user.date) {
-            user.date = null;    
+            user.date = null;
           }
-          return {screen_name: user.screen_name, count: user.count, date: user.date};  
+          return {screen_name: user.screen_name, count: user.count, date: user.date};
         });
 
         resolve(usersList);
@@ -309,7 +378,7 @@ var fetchDataset = (party, callback) => {
 
 // every night dataset is updated, the update is log in db
 var writeLog = function(log) {
-  var Data = new Log({message: log});  
+  var Data = new Log({message: log});
   Data.save(function (err, row) {
     if (err) {
       console.log(err);
@@ -328,6 +397,3 @@ module.exports.writeLog = writeLog;
 module.exports.fetchAllTwitterUsers = fetchAllTwitterUsers;
 module.exports.isTwitterUserLastUpdateYoungerThan = isTwitterUserLastUpdateYoungerThan;
 module.exports.updateCount = updateCount;
-
-
-

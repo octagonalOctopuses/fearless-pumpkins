@@ -1,11 +1,10 @@
-
 var express = require('express');
 var request = require('request');
 var bodyParser = require('body-parser');
 var twitterApi = require('../helpers/twitterApi.js');
-var googleApi = require('../helpers/googleAPI.js');
+// var googleApi = require('../helpers/googleAPI.js');
 var db = require('../db/db.js');
-var engine = require('../helpers/tweetricsEngine.js');
+// var engine = require('../helpers/tweetricsEngine.js');
 
 var app = express();
 
@@ -20,78 +19,114 @@ app.use(bodyParser.urlencoded({ extended: false }));
 // parse application/json
 app.use(bodyParser.json());
 
+app.post('/name', (req, res) => {
+  twitterApi.getTweets(req.body.screenName)
+  .then((parsedTweets) => {
+    return parsedTweets;
+  })
+  .then((response) => {
+    response.infographicState = {};
+    response.infographicState.dem = {percent: 20};
+    response.infographicState.rep = {percent: 80};
+    return response;
+  })
+  .then((response) => {
+    res.status(200).send(response);
+  });
+});
+
+app.post('/user', (req, res) => {
+  res.status(200);
+
+  // get tweets from a specific city;
+  
+
+  // twitterApi.getTweets(req.body.screenName)
+  // .then((parsedTweets) => {
+  //   return parsedTweets;
+  // })
+  // .then((response) => {
+  //   response.infographicState = {};
+  //   response.infographicState.dem = {percent: 20};
+  //   response.infographicState.rep = {percent:80};
+  //   return response;
+  // })
+  // .then((response) => {
+  //   res.status(200).send(response);
+  // });
+});
 
 // should return to the client the data for the infographic
-app.post('/name', function (req, res) {
-  if (!req.body) { return res.sendStatus(400); }
+// app.post('/name', function (req, res) {
+//   if (!req.body) { return res.sendStatus(400); }
 
-  console.log('POST received screen_name: ', req.body.screenName);
+//   console.log('POST received screen_name: ', req.body.screenName);
 
-  // check if screenname allredy in db
-  db.isTwitterUserLastUpdateYoungerThan(req.body.screenName)
-    .then(function(bool) {
-      if (bool) {
-        // if allready in db and younger than 2 days
-        // update count and return database row
-        db.updateCount(req.body.screenName)
-          .then(function(dbOutput) {
-            res.status(200).send(dbOutput);
-          })
-          .catch(function(err) {
-            res.status(400).send(err);
-          });
+//   // check if screenname allredy in db
+//   db.isTwitterUserLastUpdateYoungerThan(req.body.screenName)
+//     .then(function(bool) {
+//       if (bool) {
+//         // if allready in db and younger than 2 days
+//         // update count and return database row
+//         db.updateCount(req.body.screenName)
+//           .then(function(dbOutput) {
+//             res.status(200).send(dbOutput);
+//           })
+//           .catch(function(err) {
+//             res.status(400).send(err);
+//           });
 
-      } else {
-        // if not in db or older than 2 days
-        // get tweets friens google API and pass by the machine
-        twitterApi.getTweets(req.body.screenName)
-          .then(function(parsedTweets) {
-            return parsedTweets;
+//       } else {
+//         // if not in db or older than 2 days
+//         // get tweets friens google API and pass by the machine
+//         twitterApi.getTweets(req.body.screenName)
+//           .then(function(parsedTweets) {
+//             return parsedTweets;
 
-          }).then(function(parsedTweets) {
-            var parsedTweetsWithFriends = twitterApi.getFriends(parsedTweets);
-            return parsedTweetsWithFriends;
-          }).then(function(parsedTweetsWithFriends) {
-            var lexicalAnalysisWithFriends = googleApi.sendToGoogleAPI(parsedTweetsWithFriends);
-            return lexicalAnalysisWithFriends;
+//           }).then(function(parsedTweets) {
+//             var parsedTweetsWithFriends = twitterApi.getFriends(parsedTweets);
+//             return parsedTweetsWithFriends;
+//           }).then(function(parsedTweetsWithFriends) {
+//             var lexicalAnalysisWithFriends = googleApi.sendToGoogleAPI(parsedTweetsWithFriends);
+//             return lexicalAnalysisWithFriends;
 
-          }).then(function(lexicalAnalysisWithFriends) {
-            // send user to the machine
-            var dbInput = engine.democratOrRepublican(lexicalAnalysisWithFriends);
+//           }).then(function(lexicalAnalysisWithFriends) {
+//             // send user to the machine
+//             var dbInput = engine.democratOrRepublican(lexicalAnalysisWithFriends);
 
-            var dbOutput = db.writeTwitterUser(dbInput);
-            return dbOutput;
+//             var dbOutput = db.writeTwitterUser(dbInput);
+//             return dbOutput;
 
-          }).then(function(dbOutput) {
-            res.status(200).send(dbOutput);
+//           }).then(function(dbOutput) {
+//             res.status(200).send(dbOutput);
 
-          }).catch(function(err) {
-            if (err[0]) {
-              if (err[0].message === 'Rate limit exceeded' && err[0].code === 88 ) {
-                twitterApi.getRateLimitStatus()
-                  .then(function(limitRate) {
-                    res.status(200).send(limitRate);
-                  }).catch(function(err) {
-                    console.log('error: ', err);
-                    res.status(400).send(err);
-                  });
-              } else {
-                console.log('error: ', err);
-                res.status(400).send(err);
-              }
-            } else {
-              console.log('error: ', err);
-              res.status(400).send(err);
-            }
-          });
-      }
+//           }).catch(function(err) {
+//             if (err[0]) {
+//               if (err[0].message === 'Rate limit exceeded' && err[0].code === 88 ) {
+//                 twitterApi.getRateLimitStatus()
+//                   .then(function(limitRate) {
+//                     res.status(200).send(limitRate);
+//                   }).catch(function(err) {
+//                     console.log('error: ', err);
+//                     res.status(400).send(err);
+//                   });
+//               } else {
+//                 console.log('error: ', err);
+//                 res.status(400).send(err);
+//               }
+//             } else {
+//               console.log('error: ', err);
+//               res.status(400).send(err);
+//             }
+//           });
+//       }
 
-    })
-    .catch(function(err) {
-      console.log('error: ', err);
-      res.status(400).send(err);
-    });
-});
+//     })
+//     .catch(function(err) {
+//       console.log('error: ', err);
+//       res.status(400).send(err);
+//     });
+// });
 
 // should return to the client the data for the infographic
 app.post('/limitRate', function (req, res) {
@@ -117,6 +152,7 @@ app.post('/usersSearch', function (req, res) {
 
   twitterApi.getUsersSearch(req.body.q)
     .then(function(users) {
+      console.log('Searched user: ', users);
       res.status(200).send(users);
 
     }).catch(function(err) {
@@ -129,15 +165,23 @@ app.post('/usersSearch', function (req, res) {
 app.get('/usersList', function (req, res) {
 
   console.log('GET request for users list received');
-
-  db.fetchAllTwitterUsers()
-    .then(function(users) {
-      res.status(200).send(users);
-
-    }).catch(function(err) {
-      console.log('error: ', err);
+  let callback = (err, users) => {
+    if (err) {
+      console.log('error in usersList: ', err);
       res.status(400).send(err);
-    });
+    } else {
+      res.status(200).send(users);
+    }
+  }
+  db.findAllHandles(callback);
+  // db.fetchAllTwitterUsers()
+  //   .then(function(users) {
+  //     res.status(200).send(users);
+  //
+  //   }).catch(function(err) {
+  //     console.log('error: ', err);
+  //     res.status(400).send(err);
+  //   });
 });
 
 // should return true if in db and youbger than 2 days or false
@@ -169,7 +213,6 @@ app.post('/updateCount', function (req, res) {
       res.status(400).send(err);
     });
 });
-
 
 app.listen(app.get('port'), function(err) {
   if (err) {
