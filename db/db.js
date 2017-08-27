@@ -14,6 +14,69 @@ db.once('open', function() {
   console.log('mongoose connected successfully');
 });
 
+var trainingSchema = new mongoose.Schema({
+  Category: String, // e.g. politics
+  Classification: Number, // 0 for democrat, 1 for republican
+  Text: String, // the tweet text, uncleaned
+  Handle: String // who wrote this tweet, in case useful later
+});
+
+var cacheSchema = new mongoose.Schema({
+	Handle: String,
+	Classification: Number,
+	Probability: Number,
+	Count: {type: Number, default: 0}
+});
+
+var Training = mongoose.model('training', trainingSchema);
+var Cache = mongoose.model('cache', cacheSchema);
+
+module.exports.addTweet = (Text, Category, Classification, Handle, callback) => {
+	Training.create({Text}, (err, tweet) => {
+		if (err) {
+			throw err;
+		} else {
+			tweet.Category = Category;
+			tweet.Classification = Classification;
+			tweet.Handle = Handle;
+			tweet.save((err, updatedTweet) => {
+        console.log('tweet saved');
+				callback();
+			});
+		}
+	})
+};
+
+module.exports.findHandle = (Handle, callback) => {
+	Cache.find({Handle}, (err, handle) => {
+		callback(err, handle);
+	});
+};
+
+module.exports.addHandle = (Handle, Classification, callback) => {
+	Cache.create({Handle}, (err, handle) => {
+		if (err) {
+			throw err;
+		} else {
+			handle.Classification = Classification;
+			handle.Probability = Probability;
+			handle.save((err, updatedHandle) => {
+				callback(updatedHandle);
+			});
+		}
+	});
+};
+
+module.exports.increaseCount = (Handle, callback) => {
+	Cache.find({Handle}, (err, handle) => {
+		handle.count++;
+		handle.save((err, updatedHandle) => {
+			callback(updatedHandle);
+		});
+	});
+};
+
+
 // Schema of our dataset used to determine if a user is mostly democrat or replublican
 var partySchema = mongoose.Schema({
   commonFriends: Object,
