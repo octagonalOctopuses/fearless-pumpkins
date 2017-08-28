@@ -15,12 +15,12 @@ import sys
 
 pool =  Pool()
 
-politics = joblib.load('genderPrediction.pkl')
+politics = joblib.load('../machineLearner/genderPrediction.pkl')
 cleanedTweets = []
 predictions = []
 probabilities = []
 
-f = open('genderDictionary.txt', 'r')
+f = open('../machineLearner/genderDictionary.txt', 'r')
 dictionaryString = f.read()
 dictionaryList = dictionaryString.split(' ')
 
@@ -67,17 +67,12 @@ async def predict(tweets):
 		male += probability[0][1]
 	male = male / len(cleanedTweets)
 	female = 1 - male
-	print(male, female) 
+	print(male)
 
 rawTweets = sys.argv[1].split(';')
 loop = asyncio.get_event_loop()
 loop.run_until_complete(predict(rawTweets))
 loop.close()
 
-prediction3 = gender.predict([test])
-probability3 = gender.predict_proba([test])
-
-prediction4 = religion.predict([test])
-probability4 = religion.predict_proba([test])
 
 
