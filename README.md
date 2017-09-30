@@ -4,10 +4,9 @@ Gain insights on individual twitter accounts using lexical analysis.
 
 ## Team
 
-  - Guillaume Choupeaux
-  - Jonathan Kim
-  - Matthew Palamos
-  - Yessengerey Bolatov
+  - Yang Lu
+  - Patrick Rutherford
+  - Abhishek Bala
 
 ## Table of Contents
 
@@ -32,7 +31,6 @@ Input a Twitter username of a person on whom you'd like to gain some insight. Th
 config.js file with:
 
 - Twitter API key
-- Google Cloud Natural Language API key
 - MongoDB uri
 - Heroku Account
 
@@ -62,23 +60,6 @@ var twitterKey = {
 >consumer_secret:
 >access_token_key:
 >access_token_secret:
-
-Google API Key
-
-```
-var googleLanguageKey = {
-  'type': 'service_account',
-  'project_id': '',
-  'private_key_id': '',
-  'private_key': '',
-  'client_email': '',
-  'client_id': '',
-  'auth_uri': '',
-  'token_uri': '',
-  'auth_provider_x509_cert_url': '',
-  'client_x509_cert_url': '
-};
-```
 
 >var mongodbUri = 'mongodb://...';
 
