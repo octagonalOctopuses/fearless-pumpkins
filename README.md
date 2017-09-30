@@ -1,6 +1,6 @@
 # Tweetrics
 
-Gain insights on individual twitter accounts using lexical analysis.
+Gain insights into the political affiliation of individual twitter accounts using Neural Network.
 
 ## Team
 
